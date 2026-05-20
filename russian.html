@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Помощник по изобретению маски (마스크 발명 도우미)</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Noto Sans', 'Arial', sans-serif;
+    background: #F0F7F8;
+    min-height: 100vh;
+    display: flex; flex-direction: column; align-items: center;
+    padding: 20px 12px 40px;
+  }
+  .wrap { width: 100%; max-width: 720px; display: flex; flex-direction: column; gap: 12px; }
+
+  .header { background: #028090; border-radius: 14px; padding: 18px 22px; display: flex; align-items: center; gap: 14px; }
+  .header-icon { width: 50px; height: 50px; border-radius: 50%; background: rgba(255,255,255,0.2); display: flex; align-items: center; justify-content: center; font-size: 26px; flex-shrink: 0; }
+  .header h1 { font-size: 16px; font-weight: 700; color: #fff; margin-bottom: 4px; line-height: 1.4; }
+  .header p  { font-size: 13px; color: rgba(255,255,255,0.85); line-height: 1.6; }
+
+  .lang-badge { display: flex; gap: 8px; align-items: center; margin-bottom: 6px; }
+  .badge { padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 700; }
+  .badge-ru { background: #1B4FD8; color: #fff; }
+  .badge-kr { background: #EAF3DE; color: #3B6D11; }
+
+  .rules { background: #FAEEDA; border: 1px solid #EF9F27; border-radius: 10px; padding: 12px 16px; font-size: 13px; color: #633806; line-height: 1.85; }
+  .rules strong { font-weight: 700; }
+
+  .step-outer { background: #fff; border: 1px solid #D8E8EB; border-radius: 14px 14px 0 0; padding: 14px 16px 0; }
+  .step-row { display: flex; align-items: flex-start; }
+  .step-item { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 5px; }
+  .step-circle { width: 28px; height: 28px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 700; background: #E8F5F7; color: #90B8BE; transition: all .3s; }
+  .step-circle.active { background: #028090; color: #fff; }
+  .step-circle.done   { background: #02C39A; color: #fff; }
+  .step-label { font-size: 10px; color: #90B8BE; text-align: center; line-height: 1.4; transition: color .3s; word-break: keep-all; }
+  .step-label.active { color: #028090; font-weight: 700; }
+  .step-label.done   { color: #02C39A; }
+  .step-line { flex: 1; height: 2px; background: #E0F4F7; margin-top: 13px; flex-shrink: 0; transition: background .3s; }
+  .step-line.done { background: #02C39A; }
+
+  .chat-body { background: #fff; border: 1px solid #D8E8EB; border-top: none; border-radius: 0 0 14px 14px; overflow: hidden; display: flex; flex-direction: column; box-shadow: 0 2px 12px rgba(2,128,144,0.07); }
+  .messages { min-height: 340px; max-height: 460px; overflow-y: auto; padding: 18px 16px; display: flex; flex-direction: column; gap: 14px; background: #F7FBFC; border-top: 1px solid #E0F4F7; }
+  .msg { display: flex; gap: 10px; align-items: flex-start; }
+  .msg.user { flex-direction: row-reverse; }
+  .avatar { width: 34px; height: 34px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 17px; flex-shrink: 0; }
+  .avatar.bot  { background: #E0F4F7; }
+  .avatar.user { background: #EAF3DE; }
+  .bubble { max-width: 82%; padding: 10px 14px; font-size: 14px; line-height: 1.8; border-radius: 14px; word-break: break-word; }
+  .bubble.bot  { background: #fff; border: 1px solid #D8E8EB; border-radius: 4px 14px 14px 14px; color: #1A2E35; }
+  .bubble.user { background: #028090; border-radius: 14px 4px 14px 14px; color: #fff; }
+  .bubble p { margin-bottom: 4px; }
+  .bubble p:last-child { margin-bottom: 0; }
+  .translate-box { margin-top: 10px; padding: 8px 12px; background: #EAF3DE; border-radius: 8px; border-left: 3px solid #3A9B6F; font-size: 13px; color: #1A2E35; line-height: 1.7; }
+  .translate-label { font-size: 11px; font-weight: 700; color: #3A9B6F; margin-bottom: 4px; }
+  .warn { margin-top: 8px; padding: 7px 10px; background: #FAEEDA; border-radius: 7px; font-size: 12px; color: #633806; line-height: 1.6; }
+  .loading-dots { display: flex; gap: 5px; padding: 6px 2px; }
+  .dot { width: 7px; height: 7px; border-radius: 50%; background: #90B8BE; animation: bou 1s infinite; }
+  .dot:nth-child(2) { animation-delay: .15s; }
+  .dot:nth-child(3) { animation-delay: .3s; }
+  @keyframes bou { 0%,60%,100%{transform:translateY(0)} 30%{transform:translateY(-6px)} }
+
+  .input-row { padding: 12px 14px; border-top: 1px solid #E0F4F7; display: flex; gap: 8px; align-items: flex-end; background: #fff; }
+  textarea#uIn { flex: 1; min-height: 44px; max-height: 110px; padding: 10px 12px; font-size: 14px; border: 1px solid #C8DEE2; border-radius: 10px; background: #F7FBFC; color: #1A2E35; resize: none; font-family: inherit; line-height: 1.5; outline: none; transition: border-color .2s; }
+  textarea#uIn:focus { border-color: #028090; background: #fff; }
+  button#sBtn { padding: 10px 18px; font-size: 14px; font-weight: 700; border: none; border-radius: 10px; background: #028090; color: #fff; cursor: pointer; white-space: nowrap; flex-shrink: 0; transition: background .2s; }
+  button#sBtn:hover    { background: #015F6B; }
+  button#sBtn:disabled { background: #90B8BE; cursor: not-allowed; }
+
+  .reset-row { text-align: right; }
+  .reset-btn { background: none; border: 1px solid #C8DEE2; border-radius: 8px; padding: 5px 12px; font-size: 12px; color: #5F6B6E; cursor: pointer; transition: background .2s; }
+  .reset-btn:hover { background: #E0F4F7; }
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="header">
+    <div class="header-icon">🤖</div>
+    <div>
+      <div class="lang-badge">
+        <span class="badge badge-ru">Русский</span>
+        <span style="font-size:12px;color:rgba(255,255,255,0.7);">→ 활동지는 한국어로</span>
+        <span class="badge badge-kr">한국어</span>
+      </div>
+      <h1>Помощник по изобретению маски<br>마스크 발명 아이디어 도우미</h1>
+      <p>Задавай вопросы на русском! Я даю только подсказки 😊<br>
+         러시아어로 자유롭게 질문하세요! 힌트만 드려요.</p>
+    </div>
+  </div>
+
+  <div class="rules">
+    <strong>📌 Правила / 사용 규칙</strong><br>
+    ① Сначала придумай идею сам, потом спрашивай / 먼저 스스로 생각하기<br>
+    ② Не копируй подсказки дословно / 힌트를 그대로 쓰지 않기<br>
+    ③ P(плюсы) пиши обязательно сам / P(좋은 점)는 반드시 혼자 작성<br>
+    ④ <strong>Рабочий лист заполняй на корейском! Я помогу перевести 😊 / 활동지는 한국어로!</strong>
+  </div>
+
+  <div>
+    <div class="step-outer">
+      <div class="step-row">
+        <div class="step-item"><div class="step-circle active" id="sc0">1</div><div class="step-label active" id="sl0">불편한 점<br>입력</div></div>
+        <div class="step-line" id="ln0"></div>
+        <div class="step-item"><div class="step-circle" id="sc1">2</div><div class="step-label" id="sl1">아이디어 1<br>입력</div></div>
+        <div class="step-line" id="ln1"></div>
+        <div class="step-item"><div class="step-circle" id="sc2">3</div><div class="step-label" id="sl2">힌트 →<br>아이디어 2</div></div>
+        <div class="step-line" id="ln2"></div>
+        <div class="step-item"><div class="step-circle" id="sc3">4</div><div class="step-label" id="sl3">PMI<br>M·I 도움</div></div>
+        <div class="step-line" id="ln3"></div>
+        <div class="step-item"><div class="step-circle" id="sc4">5</div><div class="step-label" id="sl4">단점 보완<br>도움</div></div>
+      </div>
+    </div>
+    <div class="chat-body">
+      <div class="messages" id="msgs"></div>
+      <div class="input-row">
+        <textarea id="uIn" placeholder="Напиши на русском / 러시아어로 입력하세요..." rows="2"></textarea>
+        <button id="sBtn">전송</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="reset-row">
+    <button class="reset-btn" id="resetBtn">🔄 Начать заново / 처음부터</button>
+  </div>
+
+</div>
+<script>
+const API = "https://api.anthropic.com/v1/messages";
+const MODEL = "claude-sonnet-4-20250514";
+
+const SYSTEM = `Ты — чат-бот, который помогает ученикам 7-го класса выполнить задание по изобретению, связанное с неудобствами при использовании маски.
+
+[Правила языка]
+- Общайся с учеником на русском языке.
+- Каждый ответ — не более 5 предложений. Каждое предложение короткое и простое.
+- Используй слова, понятные младшим школьникам.
+- Тон — тёплый и дружелюбный.
+
+[Строго запрещено]
+- Нельзя давать готовое решение.
+  Плохой пример: "Можно заменить ушные петли на зажим сзади головы" — такой готовый ответ давать нельзя.
+- Давай только 2 подсказки за раз, не больше 3.
+- Нельзя первым называть P (плюсы).
+
+[Роль на каждом этапе]
+Этап 1 (неудобство): Коротко посочувствуй + дай 2 наводящих вопроса. До 5 предложений.
+Этап 2 (идея 1): Коротко похвали + дай 2 вопроса для развития идеи. До 5 предложений.
+Этап 3 (идея 2): Отметь прогресс по сравнению с идеей 1 + задай 1–2 уточняющих вопроса. До 5 предложений.
+Этап 4 (PMI M·I): Давай подсказки только для M (минусы) или I (интересное). P никогда не называть первым. До 5 предложений.
+Этап 5 (улучшение минусов): Дай 2 наводящих вопроса о том, как можно улучшить недостаток. До 5 предложений.
+
+[Перевод на корейский — ОЧЕНЬ ВАЖНО!]
+После каждого ответа обязательно добавь блок перевода:
+---한국어 번역 (활동지에 써보세요)---
+Переведи то, что сказал ученик (неудобство/идею), на корейский язык в формате:
+"활동지에 이렇게 써보세요: [корейский перевод]"
+---
+Это поможет ученику записать ответ на корейском в рабочий лист.
+
+[Важно]
+Уровень корейского у учеников низкий. Обязательно помогай им с корейским переводом.`;
+
+let step = 0;
+let discomfort = "";
+let idea1 = "";
+let idea2 = "";
+
+const msgsEl = document.getElementById("msgs");
+const input  = document.getElementById("uIn");
+const btn    = document.getElementById("sBtn");
+
+const PLACEHOLDERS = [
+  "Что неудобно при ношении маски? / 불편한 점을 써보세요",
+  "Придумай своё решение / 아이디어 1을 써보세요",
+  "Посмотри подсказки и напиши идею 2 / 아이디어 2를 써보세요",
+  "Застрял на M или I в PMI? Спроси меня!",
+  "Не знаешь как улучшить минус? Спроси!"
+];
+
+const PROMPTS = [
+  (v) => `Ученик назвал неудобство при ношении маски: "${v}"\nКоротко посочувствуй. Дай 2 наводящих вопроса о направлении решения, не давай готового ответа. Закончи фразой "Если придумал идею — напиши!" До 5 предложений. Обязательно добавь блок перевода на корейский для "${v}".`,
+  (v) => `Идея 1 ученика: "${v}" (неудобство: "${discomfort}")\nКоротко похвали. Дай 2 вопроса для развития, без готового ответа. Закончи "Посмотри подсказки и напиши идею 2!" До 5 предложений. Добавь блок перевода на корейский.`,
+  (v) => `Идея 2 ученика: "${v}" (идея 1: "${idea1}")\nОтметь прогресс идеи 2. Задай 1–2 уточняющих вопроса. Скажи "Теперь заполняй таблицу PMI! Если M или I не получается — спроси меня 😊". До 5 предложений. Добавь блок перевода.`,
+  (v) => `Ученик просит помощи с PMI: "${v}"\nИдея 2: "${idea2}"\nP (плюсы) никогда не называть. Дай только 2 подсказки для M (минусы) или I (интересное), в форме вопросов. До 5 предложений. Добавь блок перевода.`,
+  (v) => `Ученик думает как улучшить минус: "${v}"\nИдея 2: "${idea2}"\nДай 2 наводящих вопроса о том как улучшить этот недостаток. Без готового ответа. До 5 предложений. Добавь блок перевода.`
+];
+
+function updateSteps(s) {
+  for (let i = 0; i < 5; i++) {
+    document.getElementById("sc"+i).className = "step-circle"+(i<s?" done":i===s?" active":"");
+    document.getElementById("sl"+i).className = "step-label"+(i<s?" done":i===s?" active":"");
+  }
+  for (let i = 0; i < 4; i++) {
+    document.getElementById("ln"+i).className = "step-line"+(i<s?" done":"");
+  }
+  input.placeholder = PLACEHOLDERS[Math.min(s,4)];
+}
+
+function parseReply(text) {
+  const divider = "---한국어 번역";
+  const idx = text.indexOf(divider);
+  if (idx === -1) return { main: text, kr: null };
+  const main = text.substring(0, idx).trim();
+  const krBlock = text.substring(idx);
+  const match = krBlock.match(/활동지에 이렇게 써보세요[:\s]*(.+)/);
+  const kr = match ? match[1].trim() : null;
+  return { main, kr };
+}
+
+function addMsg(role, html, krText, showWarn) {
+  const wrap = document.createElement("div");
+  wrap.className = "msg " + role;
+  const av = document.createElement("div");
+  av.className = "avatar " + role;
+  av.textContent = role === "bot" ? "🤖" : "🙂";
+  const bub = document.createElement("div");
+  bub.className = "bubble " + role;
+  bub.innerHTML = html;
+  if (krText) {
+    const t = document.createElement("div");
+    t.className = "translate-box";
+    t.innerHTML = `<div class="translate-label">📝 활동지에 이렇게 써보세요 (한국어)</div>${krText}`;
+    bub.appendChild(t);
+  }
+  if (showWarn) {
+    const w = document.createElement("div");
+    w.className = "warn";
+    w.innerHTML = "⚠️ Не копируй подсказки дословно! / 힌트를 그대로 쓰지 말고 내 생각으로 발전시키기!";
+    bub.appendChild(w);
+  }
+  wrap.appendChild(av); wrap.appendChild(bub);
+  msgsEl.appendChild(wrap);
+  msgsEl.scrollTop = msgsEl.scrollHeight;
+}
+
+function showLoading() {
+  const d = document.createElement("div"); d.className = "msg bot"; d.id = "ld";
+  const av = document.createElement("div"); av.className = "avatar bot"; av.textContent = "🤖";
+  const bub = document.createElement("div"); bub.className = "bubble bot";
+  bub.innerHTML = '<div class="loading-dots"><div class="dot"></div><div class="dot"></div><div class="dot"></div></div>';
+  d.appendChild(av); d.appendChild(bub); msgsEl.appendChild(d);
+  msgsEl.scrollTop = msgsEl.scrollHeight;
+}
+function hideLoading() { const l = document.getElementById("ld"); if(l) l.remove(); }
+
+function toHtml(t) {
+  return t.split("\n").filter(l=>l.trim()).map(l=>`<p>${l}</p>`).join("");
+}
+
+async function callAPI(prompt) {
+  const res = await fetch(API, {
+    method: "POST", headers: {"Content-Type":"application/json"},
+    body: JSON.stringify({ model: MODEL, max_tokens: 700, system: SYSTEM, messages: [{role:"user",content:prompt}] })
+  });
+  const data = await res.json();
+  return data.content?.[0]?.text || "Произошла ошибка, попробуй снова! / 오류가 났어요!";
+}
+
+async function handleSend() {
+  const val = input.value.trim();
+  if (!val || btn.disabled) return;
+  input.value = ""; btn.disabled = true;
+  addMsg("user", `<p>${val}</p>`, null, false);
+  if (step===0) discomfort=val;
+  else if (step===1) idea1=val;
+  else if (step===2) idea2=val;
+  const prompt = PROMPTS[Math.min(step,4)](val);
+  showLoading();
+  try {
+    const reply = await callAPI(prompt);
+    hideLoading();
+    const { main, kr } = parseReply(reply);
+    addMsg("bot", toHtml(main), kr, step<=3);
+    if (step<4) step++;
+    updateSteps(step);
+  } catch(e) {
+    hideLoading();
+    addMsg("bot","<p>Ошибка, попробуй снова! / 오류가 났어요!</p>",null,false);
+  }
+  btn.disabled = false; input.focus();
+}
+
+document.getElementById("resetBtn").addEventListener("click", ()=>{
+  step=0; discomfort=""; idea1=""; idea2="";
+  msgsEl.innerHTML=""; updateSteps(0); welcome();
+});
+
+function welcome() {
+  addMsg("bot",
+    `<p>Привет! Я — <strong>помощник по изобретению маски</strong>! 🎉</p>
+     <p>Я не дам готовый ответ.</p>
+     <p>Я дам тебе <strong>подсказки</strong>, чтобы ты сам придумал идею!</p>
+     <p>안녕! 러시아어로 자유롭게 물어봐도 돼 😊</p>
+     <p>먼저 마스크 쓸 때 <strong>불편했던 점</strong>을 러시아어로 써봐! 👇</p>`,
+    null, false
+  );
+}
+
+btn.addEventListener("click", handleSend);
+input.addEventListener("keydown", e=>{ if(e.key==="Enter"&&!e.shiftKey){e.preventDefault();handleSend();} });
+updateSteps(0); welcome();
+</script>
+</body>
+</html>
